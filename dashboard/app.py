@@ -14,6 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 from dashboard.search_engine import JobSearchEngine, load_csv, list_csv_files
+from main import collect_jobs
 
 # ── 페이지 설정 ──────────────────────────────────────────────────
 st.set_page_config(
@@ -120,10 +121,32 @@ with st.sidebar:
     st.divider()
 
     # CSV 파일 선택
-    csv_files = list_csv_files(os.path.join(ROOT, "output"))
+    output_dir = os.path.join(ROOT, "output")
+
+    csv_files = list_csv_files(output_dir)
+
+    # 최초 실행 시 CSV가 없으면 자동 수집
     if not csv_files:
-        st.error("output/ 폴더에 CSV 파일이 없습니다.\n먼저 `python main.py`를 실행하세요.")
+        with st.spinner("최초 실행 - 채용공고 수집 중..."):
+            jobs, csv_path = collect_jobs()
+
+        csv_files = list_csv_files(output_dir)
+
+    if not csv_files:
+        st.error("채용공고 수집에 실패했습니다.")
         st.stop()
+
+    # 수동 재수집 버튼
+    if st.button("🔄 최신 공고 재수집", use_container_width=True):
+        with st.spinner("채용공고 수집 중..."):
+            jobs, csv_path = collect_jobs()
+    st.success(f"{len(jobs)}건 수집 완료")
+
+    # 캐시 초기화
+    st.cache_data.clear()
+    st.cache_resource.clear()
+
+    st.rerun()
 
     selected_file = st.selectbox(
         "📂 데이터 파일",
