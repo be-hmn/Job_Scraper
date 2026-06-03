@@ -33,6 +33,47 @@ ALL_SCRAPERS = {
     "잡플래닛":   JobplanetScraper,
 }
 
+def collect_jobs(
+    sites=None,
+    dedup=True,
+    workers=3,
+    output=None
+):
+    setup_logging()
+
+    if sites is None:
+        sites = list(ALL_SCRAPERS.keys())
+
+    selected = {
+        k: v for k, v in ALL_SCRAPERS.items()
+        if k in sites
+    }
+
+    logger.info("수집 대상 사이트: %s", ", ".join(selected.keys()))
+
+    all_jobs = []
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(run_scraper, name, cls): name
+            for name, cls in selected.items()
+        }
+
+        for future in as_completed(futures):
+            jobs = future.result()
+            all_jobs.extend(jobs)
+
+    logger.info("전체 수집 완료: %d건", len(all_jobs))
+
+    if dedup:
+        all_jobs = deduplicate(all_jobs)
+
+    if not all_jobs:
+        return [], None
+
+    csv_path = save_csv(all_jobs, output)
+
+    return all_jobs, csv_path
 
 def run_scraper(name: str, scraper_cls) -> List[Dict]:
     """단일 스크래퍼 실행 (스레드 내부에서 호출)"""
