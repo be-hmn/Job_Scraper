@@ -140,13 +140,13 @@ with st.sidebar:
     if st.button("🔄 최신 공고 재수집", use_container_width=True):
         with st.spinner("채용공고 수집 중..."):
             jobs, csv_path = collect_jobs()
-    st.success(f"{len(jobs)}건 수집 완료")
+        st.success(f"{len(jobs)}건 수집 완료")
 
-    # 캐시 초기화
-    st.cache_data.clear()
-    st.cache_resource.clear()
+        # 캐시 초기화
+        st.cache_data.clear()
+        st.cache_resource.clear()
 
-    st.rerun()
+        st.rerun()
 
     selected_file = st.selectbox(
         "📂 데이터 파일",
